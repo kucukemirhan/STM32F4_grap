@@ -1,0 +1,6 @@
+{
+    "name": "MyStepperLib",
+    "version": "1.0.0",
+    "frameworks": ["stm32cube"],
+    "platforms": ["ststm32"]
+  }
