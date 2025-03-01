@@ -6,5 +6,6 @@
 #include "GPIO_lib.h"
 #include "Encoder_lib.h"
 #include "Stepper_lib.h"
+#include "UART_lib.h"
 
 #endif // MYSTEPPERLIB_H

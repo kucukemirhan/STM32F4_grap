@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "Stepper_lib.h"
+#include "MyStepperLib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,13 +80,15 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  DMA::init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   // TimPWM pwm1(TIM3, &htim3);
 
@@ -97,10 +99,12 @@ int main(void)
   // StepperMotor motor1(enc1, pwm1, dir1);
   // motor1.setSpeed(1500);
   // motor1.setTargetPosition(5000);
-
-  TimPWM pwm1(TIM3, &htim3);
-  pwm1.start();
   
+  // UART DMA read and write variables
+  UartDMA uart1(USART6, &huart6);
+  uint8_t data[64] = {0};
+  uart1.start_read();
+
   /* USER CODE END 2 */
   
   /* Infinite loop */
@@ -110,7 +114,19 @@ int main(void)
     /* USER CODE END WHILE */
     
     /* USER CODE BEGIN 3 */
-    pwm1.setFrequency(2000);
+
+    uint16_t len = uart1.read(data, sizeof(data));
+    if (len > 0)
+    {
+      while(!uart1.is_tx_complete());
+      uart1.write(data, len);
+    }
+    if (uart1.is_tx_complete()) // optional
+    {
+      memset(data, 0, sizeof(data));
+    }
+
+
     // motor1.update();
     // HAL_Delay(1);
   }
