@@ -63,6 +63,14 @@ void Error_Handler(void);
 #define ENC1_CH1_GPIO_Port GPIOA
 #define PWM1_Pin GPIO_PIN_6
 #define PWM1_GPIO_Port GPIOA
+#define GREEN_LED_Pin GPIO_PIN_12
+#define GREEN_LED_GPIO_Port GPIOD
+#define ORANGE_LED_Pin GPIO_PIN_13
+#define ORANGE_LED_GPIO_Port GPIOD
+#define RED_LED_Pin GPIO_PIN_14
+#define RED_LED_GPIO_Port GPIOD
+#define BLUE_LED_Pin GPIO_PIN_15
+#define BLUE_LED_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 

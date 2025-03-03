@@ -89,6 +89,8 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_USART6_UART_Init();
+  MX_TIM1_Init();
+
   /* USER CODE BEGIN 2 */
   // TimPWM pwm1(TIM3, &htim3);
 
@@ -99,6 +101,23 @@ int main(void)
   // StepperMotor motor1(enc1, pwm1, dir1);
   // motor1.setSpeed(1500);
   // motor1.setTargetPosition(5000);
+
+  DigitalOut led1(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+  DigitalOut led2(ORANGE_LED_GPIO_Port, ORANGE_LED_Pin);
+  DigitalOut led3(RED_LED_GPIO_Port, RED_LED_Pin);
+  DigitalOut led4(BLUE_LED_GPIO_Port, BLUE_LED_Pin);
+
+  TimIT tim1(TIM1, &htim1);
+  uint64_t tick1_ms_previous = 0;
+  uint64_t tick2_ms_previous = 0;
+  uint64_t tick3_ms_previous = 0;
+  uint64_t tick4_ms_previous = 0;
+  tim1.start();
+
+  uint16_t led1_delay = 500;
+  uint16_t led2_delay = 1000;
+  uint16_t led3_delay = 500;
+  uint16_t led4_delay = 1000;
   
   // UART DMA read and write variables
   UartDMA uart1(USART6, &huart6);
@@ -126,6 +145,29 @@ int main(void)
       memset(data, 0, sizeof(data));
     }
 
+    if (tim1.delay_ms(tick1_ms_previous, led1_delay))
+    {
+      tick1_ms_previous = tim1.read();
+      led1.toggle();
+    }
+
+    if (tim1.delay_ms(tick2_ms_previous, led2_delay))
+    {
+      tick2_ms_previous = tim1.read();
+      led2.toggle();
+    }
+
+    if (tim1.delay_ms(tick3_ms_previous, led3_delay))
+    {
+      tick3_ms_previous = tim1.read();
+      led3.toggle();
+    }
+
+    if (tim1.delay_ms(tick4_ms_previous, led4_delay))
+    {
+      tick4_ms_previous = tim1.read();
+      led4.toggle();
+    }
 
     // motor1.update();
     // HAL_Delay(1);
