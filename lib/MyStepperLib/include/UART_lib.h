@@ -52,7 +52,7 @@ public:
     virtual HAL_StatusTypeDef write(uint8_t *pData, uint16_t Size) override;
     virtual HAL_StatusTypeDef start_read(void) override;
 
-private:
+protected:
     virtual void put(uint16_t index, uint16_t size) override;
 
 };

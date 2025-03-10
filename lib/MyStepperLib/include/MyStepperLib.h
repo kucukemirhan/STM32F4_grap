@@ -7,5 +7,6 @@
 #include "Encoder_lib.h"
 #include "Stepper_lib.h"
 #include "UART_lib.h"
+#include "UartParser.h"
 
 #endif // MYSTEPPERLIB_H

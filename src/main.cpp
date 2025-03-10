@@ -114,13 +114,13 @@ int main(void)
   uint64_t tick4_ms_previous = 0;
   tim1.start();
 
-  uint16_t led1_delay = 500;
-  uint16_t led2_delay = 1000;
-  uint16_t led3_delay = 500;
-  uint16_t led4_delay = 1000;
+  uint16_t led1_delay = 0;
+  uint16_t led2_delay = 0;
+  uint16_t led3_delay = 0;
+  uint16_t led4_delay = 0;
   
   // UART DMA read and write variables
-  UartDMA uart1(USART6, &huart6);
+  UartParser uart1(USART6, &huart6);
   uint8_t data[64] = {0};
   uart1.start_read();
 
@@ -140,10 +140,14 @@ int main(void)
       while(!uart1.is_tx_complete());
       uart1.write(data, len);
     }
-    if (uart1.is_tx_complete()) // optional
-    {
-      memset(data, 0, sizeof(data));
-    }
+    // if (uart1.is_tx_complete()) // optional
+    // {
+    //   memset(data, 0, sizeof(data));
+    // }
+    led1_delay = static_cast<uint16_t>(uart1.getJointPosition(1));
+    led2_delay = static_cast<uint16_t>(uart1.getJointPosition(2));
+    led3_delay = static_cast<uint16_t>(uart1.getJointPosition(3));
+    led4_delay = static_cast<uint16_t>(uart1.getJointPosition(4));
 
     if (tim1.delay_ms(tick1_ms_previous, led1_delay))
     {
