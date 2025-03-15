@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MyStepperLib.h"
+#include "stm32_ros.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
