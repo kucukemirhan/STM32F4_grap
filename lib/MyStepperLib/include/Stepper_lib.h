@@ -28,7 +28,8 @@ public:
     // Get the current position.
     int32_t getCurrentPosition();
 
-    // Stop the motor movement.
+    // Start or stop the motor movement.
+    void start();
     void stop();
 
 private:

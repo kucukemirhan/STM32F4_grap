@@ -80,7 +80,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  DMA::init();
+  // DMA::init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -88,22 +88,36 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_USART6_UART_Init();
+  MX_TIM1_Init();
+  MX_TIM4_Init();
+  MX_TIM8_Init();
+  // MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  // TimPWM pwm1(TIM3, &htim3);
+  DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
+  TimPWM pwm1(TIM3, &htim3);
+  EncoderIT enc1(&htim2, false); //normal encoder
+  enc1.start();
 
-  // EncoderIT enc1(&htim2);
+  StepperMotor motor1(enc1, pwm1, dir1);
+  motor1.setSpeed(1500);
+  motor1.setTargetPosition(1000);
+  motor1.start();
 
-  // DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
 
-  // StepperMotor motor1(enc1, pwm1, dir1);
-  // motor1.setSpeed(1500);
-  // motor1.setTargetPosition(5000);
+  DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
+  TimPWM pwm2(TIM8, &htim8);
+  EncoderIT enc2(&htim4, true); // inverted encoder
+  enc2.start();
+
+  StepperMotor motor2(enc2, pwm2, dir2);
+  motor2.setSpeed(1500);
+  motor2.setTargetPosition(1000);
+  motor2.start();
   
-  // UART DMA read and write variables
-  UartDMA uart1(USART6, &huart6);
-  uint8_t data[64] = {0};
-  uart1.start_read();
+  // // UART DMA read and write variables
+  // UartDMA uart1(USART6, &huart6);
+  // uint8_t data[64] = {0};
+  // uart1.start_read();
 
   /* USER CODE END 2 */
   
@@ -115,20 +129,10 @@ int main(void)
     
     /* USER CODE BEGIN 3 */
 
-    uint16_t len = uart1.read(data, sizeof(data));
-    if (len > 0)
-    {
-      while(!uart1.is_tx_complete());
-      uart1.write(data, len);
-    }
-    if (uart1.is_tx_complete()) // optional
-    {
-      memset(data, 0, sizeof(data));
-    }
-
-
-    // motor1.update();
-    // HAL_Delay(1);
+    motor1.update();
+    HAL_Delay(1);
+    motor2.update();
+    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }

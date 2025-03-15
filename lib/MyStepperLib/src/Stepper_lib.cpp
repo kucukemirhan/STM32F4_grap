@@ -29,36 +29,30 @@ int32_t StepperMotor::getCurrentPosition() {
 }
 
 void StepperMotor::update() {
-    int32_t currentPos = getCurrentPosition();
+    if (!isPwmRunning) return;
+    
+    int32_t currentPosition = getCurrentPosition();
 
-    if (currentPos < targetPosition) {
-        // For forward movement: set the proper direction.
-        direction.write(GPIO_PIN_SET);
-        pwm.setFrequency(speed);
-        // Only start PWM if it isn't already running.
-        if (!isPwmRunning) {
-            pwm.start();
-            isPwmRunning = true;
-        }
+    int32_t error = targetPosition - currentPosition;
+    if (std::abs(error) <= 10) {
+        this->stop();
+        return;
     }
-    else if (currentPos > targetPosition) {
-        // For reverse movement: set the proper direction.
-        direction.write(GPIO_PIN_RESET);
-        pwm.setFrequency(speed);
-        // Only start PWM if it isn't already running.
-        if (!isPwmRunning) {
-            pwm.start();
-            isPwmRunning = true;
-        }
-    }
-    else {
-        // Target position reached: stop PWM if it is running.
-        if (isPwmRunning) {
-            pwm.stop();
-            isPwmRunning = false;
-        }
+
+    uint8_t dir = (error >= 0) ? 1 : 0;
+    direction.write(dir ? GPIO_PIN_RESET : GPIO_PIN_SET);
+
+    pwm.setFrequency(speed);
+    this->start();
+}
+
+void StepperMotor::start() {
+    if (!isPwmRunning) {
+        pwm.start();
+        isPwmRunning = true;
     }
 }
+
 
 void StepperMotor::stop() {
     if (isPwmRunning) {

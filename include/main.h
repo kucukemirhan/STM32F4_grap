@@ -61,8 +61,18 @@ void Error_Handler(void);
 #define ENC1_CH2_GPIO_Port GPIOA
 #define ENC1_CH1_Pin GPIO_PIN_5
 #define ENC1_CH1_GPIO_Port GPIOA
-#define PWM1_Pin GPIO_PIN_6
-#define PWM1_GPIO_Port GPIOA
+#define PULSE1_Pin GPIO_PIN_6
+#define PULSE1_GPIO_Port GPIOA
+#define DIR2_Pin GPIO_PIN_7
+#define DIR2_GPIO_Port GPIOA
+#define DIR1_Pin GPIO_PIN_1
+#define DIR1_GPIO_Port GPIOB
+#define ENC2_CH1_Pin GPIO_PIN_12
+#define ENC2_CH1_GPIO_Port GPIOD
+#define ENC2_CH2_Pin GPIO_PIN_13
+#define ENC2_CH2_GPIO_Port GPIOD
+#define PULSE2_Pin GPIO_PIN_6
+#define PULSE2_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
