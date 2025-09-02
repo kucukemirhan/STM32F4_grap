@@ -63,6 +63,8 @@ void Error_Handler(void);
 #define ENC1_CH1_GPIO_Port GPIOA
 #define PWM1_Pin GPIO_PIN_6
 #define PWM1_GPIO_Port GPIOA
+#define DIR1_Pin GPIO_PIN_1
+#define DIR1_GPIO_Port GPIOB
 #define GREEN_LED_Pin GPIO_PIN_12
 #define GREEN_LED_GPIO_Port GPIOD
 #define ORANGE_LED_Pin GPIO_PIN_13

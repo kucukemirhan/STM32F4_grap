@@ -91,7 +91,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USART6_UART_Init();
   MX_TIM1_Init();
-
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
   // TimPWM pwm1(TIM3, &htim3);
 
@@ -125,6 +125,16 @@ int main(void)
   uint8_t data[64] = {0};
   uart1.start_read();
 
+  // CAN read and write variables
+  CanBase can1(CAN1, &hcan1);
+  uint8_t txData[4] = {0};
+  uint8_t rxData[4] = {0};
+  uint8_t rxSize;
+
+  can1.configureFilter(0x123, 0x7FF);
+
+  HAL_CAN_Start(&hcan1);
+  
   /* USER CODE END 2 */
   
   /* Infinite loop */
@@ -135,16 +145,21 @@ int main(void)
     
     /* USER CODE BEGIN 3 */
 
-    uint16_t len = uart1.read(data, sizeof(data));
-    if (len > 0)
-    {
-      while(!uart1.is_tx_complete());
-      uart1.write(data, len);
-    }
-    // if (uart1.is_tx_complete()) // optional
+    if (can1.read(rxData, &rxSize) == HAL_OK) {
+      // Received a message:
+      // rxData now contains the data and rxSize tells how many bytes were received.
+    } 
+
+    // uint16_t len = uart1.read(data, sizeof(data));
+    // if (len > 0)
     // {
-    //   memset(data, 0, sizeof(data));
+    //   while(!uart1.is_tx_complete());
+    //   uart1.write(data, len);
     // }
+    // // if (uart1.is_tx_complete()) // optional
+    // // {
+    // //   memset(data, 0, sizeof(data));
+    // // }
     led1_delay = static_cast<uint16_t>(uart1.getJointPosition(1));
     led2_delay = static_cast<uint16_t>(uart1.getJointPosition(2));
     led3_delay = static_cast<uint16_t>(uart1.getJointPosition(3));

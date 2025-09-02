@@ -32,9 +32,9 @@ public:
     void stop();
 
 private:
-    EncoderIT &encoder;      // Reference to an externally created encoder
-    TimPWM &pwm;             // Reference to an externally created PWM timer
-    DigitalOut &direction;   // Reference to an externally created digital output
+    EncoderIT &encoder;
+    TimPWM &pwm;
+    DigitalOut &direction;
 
     int32_t targetPosition;  // Desired position in steps
     uint16_t speed;          // Stepping speed (steps per second)
