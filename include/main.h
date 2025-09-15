@@ -71,8 +71,16 @@ void Error_Handler(void);
 #define ENC2_CH1_GPIO_Port GPIOD
 #define ENC2_CH2_Pin GPIO_PIN_13
 #define ENC2_CH2_GPIO_Port GPIOD
+#define RED_LED_Pin GPIO_PIN_14
+#define RED_LED_GPIO_Port GPIOD
+#define BLUE_LED_Pin GPIO_PIN_15
+#define BLUE_LED_GPIO_Port GPIOD
 #define PULSE2_Pin GPIO_PIN_6
 #define PULSE2_GPIO_Port GPIOC
+#define CAN_RX1_Pin GPIO_PIN_0
+#define CAN_RX1_GPIO_Port GPIOD
+#define CAN_TX1_Pin GPIO_PIN_1
+#define CAN_TX1_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 

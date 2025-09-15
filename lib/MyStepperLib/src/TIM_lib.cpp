@@ -117,6 +117,9 @@ uint64_t TimIT::read(void)
 void TimIT::tick(void) 
 {
     _tick++;
+    if (_userCallback) {
+        _userCallback();
+    }
 }
 
 bool TimIT::delay_ms(uint64_t start_time, uint64_t delay_time)

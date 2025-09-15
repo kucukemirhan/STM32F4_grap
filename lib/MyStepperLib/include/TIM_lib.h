@@ -38,6 +38,8 @@ public:
 
     bool delay_ms(uint64_t start_time, uint64_t delay_time);
 
+    inline void setUserCallback(void (*cb)(void)) { _userCallback = cb; }
+
 protected:
     static class ISR<TimIT> ISR_List;
 
@@ -46,6 +48,8 @@ private:
     
     static void PeriodElapsedCallback(TIM_HandleTypeDef *htim);
     void tick(void);
+
+    void (*_userCallback)(void) = nullptr;
 };
 
 class TimPWM : public TimBase {

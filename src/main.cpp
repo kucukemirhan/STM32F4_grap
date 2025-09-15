@@ -1,4 +1,5 @@
 /* USER CODE BEGIN Header */
+// MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER MASTER
 /**
   ******************************************************************************
   * @file           : main.c
@@ -18,7 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "can.h"
+#include <string.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MyStepperLib.h"
@@ -43,17 +45,68 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+float deg1 = 1000.0f;
+float deg2 = 2000.0f;
+float deg3 = 3000.0f;
+float deg4 = 4000.0f;
+float deg5 = 5000.0f;
+float deg6 = 6000.0f;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
+// CAN pack & send helper
+static inline void CAN_Send2F(uint16_t std_id, float a, float b) {
+    CAN_TxHeaderTypeDef tx = {0};
+    uint8_t data[8];
+
+    memcpy(&data[0], &a, 4);   // STM32 = little-endian
+    memcpy(&data[4], &b, 4);
+
+    tx.StdId = std_id;         // 0x121 / 0x122 / 0x123
+    tx.IDE   = CAN_ID_STD;        // 11-bit ID
+    tx.RTR   = CAN_RTR_DATA;      // data frame
+    tx.DLC   = 8;
+
+    uint32_t mbx;
+    HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan1, &tx, data, &mbx);
+    if (st != HAL_OK) {
+        // Only abort if we actually got a valid mailbox bit
+        if (mbx == CAN_TX_MAILBOX0 || mbx == CAN_TX_MAILBOX1 || mbx == CAN_TX_MAILBOX2) {
+            HAL_CAN_AbortTxRequest(&hcan1, mbx);
+        }
+    }
+}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void TaskFunction(void)
+{
+    // static const uint16_t ids[3] = {0x121, 0x122, 0x123};
+    // static uint8_t idx = 0;
+
+    // CAN_Send2F(ids[idx], deg1, deg2);   // send to next slave
+    // idx++; 
+    // if (idx >= 3) idx = 0;              // wrap
+}
+
+CAN_HandleTypeDef    CanHandle;
+CAN_TxHeaderTypeDef  TxHeader;
+CAN_RxHeaderTypeDef  RxHeader;
+uint8_t              TxData[8];
+uint8_t              RxData[8];
+uint32_t             TxMailbox;
+
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -91,8 +144,32 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_TIM8_Init();
-
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
+
+  if (HAL_CAN_Start(&hcan1) != HAL_OK)
+{
+    Error_Handler();
+}
+
+if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+{
+    Error_Handler();
+}
+
+  TxHeader.StdId = 0x446; // Master STM ID
+  TxHeader.ExtId = 0x00;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.DLC = 8;
+  TxHeader.TransmitGlobalTime = DISABLE;
+
+  HAL_Delay(1000);
+
+  TimIT taskTimer(TIM1, &htim1);
+  taskTimer.setUserCallback(TaskFunction);
+  taskTimer.start();
+
   TimPWM pwm1(TIM3, &htim3);
   TimPWM pwm2(TIM8, &htim8);
 
@@ -104,30 +181,33 @@ int main(void)
   DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
   DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
 
-  StepperMotor   motor1(enc1, pwm1, dir1, 200.0f, 50.0f);
-  OpenLoopStepper motor2(pwm2, dir2,       200.0f,  8.0f);
+  OpenLoopStepper   motor1(pwm1, dir1, 200.0f, 10.0f);
+  OpenLoopStepper   motor2(pwm2, dir2, 10000.0f,  50.0f);
 
   motor1.setSpeed(1500);
-  motor1.setTargetDegrees(180.0f);  // half turn at OUTPUT shaft
-
+  motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
+ 
   motor2.setSpeed(1500);
-  motor2.setTargetDegrees(90.0f);   // quarter turn at OUTPUT shaft
+  motor2.setTargetDegrees(5.0f);   // quarter turn at OUTPUT shaft
+
+  DigitalOut red_LED(RED_LED_GPIO_Port, RED_LED_Pin);
+  DigitalOut blue_LED(BLUE_LED_GPIO_Port, BLUE_LED_Pin);
 
   /* USER CODE END 2 */
   
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-    
-    /* USER CODE BEGIN 3 */
+while (1)
+{
+    // motor1.update();
+    // HAL_Delay(1);
+    // motor2.update();
+    // HAL_Delay(1);
+    CAN_Send2F(0x121, deg1, deg2);  HAL_Delay(10);
+    CAN_Send2F(0x122, deg3, deg4);  HAL_Delay(10);
+    CAN_Send2F(0x123, deg5, deg6);  HAL_Delay(10);
+}
 
-    motor1.update();
-    HAL_Delay(1);
-    motor2.update();
-    HAL_Delay(1);
-  }
   /* USER CODE END 3 */
 }
 
