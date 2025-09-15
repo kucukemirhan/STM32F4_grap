@@ -104,13 +104,14 @@ int main(void)
   DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
   DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
 
-  StepperMotor motor1(enc1 ,pwm1, dir1);
+  StepperMotor   motor1(enc1, pwm1, dir1, 200.0f, 50.0f);
+  OpenLoopStepper motor2(pwm2, dir2,       200.0f,  8.0f);
+
   motor1.setSpeed(1500);
-  motor1.setTargetPosition(3000);
-  
-  OpenLoopStepper motor2(pwm2, dir2);
+  motor1.setTargetDegrees(180.0f);  // half turn at OUTPUT shaft
+
   motor2.setSpeed(1500);
-  motor2.setTargetPosition(3000);
+  motor2.setTargetDegrees(90.0f);   // quarter turn at OUTPUT shaft
 
   /* USER CODE END 2 */
   

@@ -13,7 +13,9 @@
 class StepperMotor {
 public:
     // Constructor accepts references to already configured objects.
-    StepperMotor(EncoderIT &encoder, TimPWM &pwm, DigitalOut &direction);
+    //      reduction = motor_rev / output_rev  (e.g. 50:1 gearbox => 50.0f)
+    StepperMotor(EncoderIT &encoder, TimPWM &pwm, DigitalOut &direction,
+                 float stepsPerMotorRev = 200.0f, float reduction = 1.0f);
     ~StepperMotor();
 
     // Set the target position (in steps).
@@ -33,7 +35,23 @@ public:
 
     void setDeadband(int32_t steps) { deadbandSteps = (steps < 0 ? 0 : steps); }
 
+    // degrees-based API (absolute / relative in degrees at the OUTPUT shaft)
+    void setTargetDegrees(float degrees);
+    void moveByDegrees(float deltaDegrees);
+
+    // configuration helpers
+    void setReduction(float r)           { reduction = (r > 0.f ? r : 1.f); }
+    void setStepsPerMotorRev(float spr)  { stepsPerMotorRev = (spr > 0.f ? spr : 200.f); }
+
 private:
+    // conversion helpers
+    inline float stepsPerOutputRev() const { return stepsPerMotorRev * reduction; }
+    inline int32_t degreesToSteps(float deg) const {
+        // round to nearest step
+        const float steps = (deg / 360.0f) * stepsPerOutputRev();
+        return static_cast<int32_t>( (steps >= 0.f) ? (steps + 0.5f) : (steps - 0.5f) );
+    }
+
     EncoderIT &encoder;      // Reference to an externally created encoder
     TimPWM &pwm;             // Reference to an externally created PWM timer
     DigitalOut &direction;   // Reference to an externally created digital output
@@ -43,6 +61,10 @@ private:
     bool isPwmRunning;       // Flag to track if PWM is already active
 
     int32_t deadbandSteps = 200;   // default: ±2 steps deadband (tweak to taste)
+
+    // NEW: kinematics
+    float    stepsPerMotorRev;   // microstepped steps/rev at motor
+    float    reduction;          // motor_rev / output_rev
 };
 
 #pragma once
@@ -63,7 +85,8 @@ public:
      * @param pwmTimer  TimPWM instance configured to output STEP pulses
      * @param dirPin    DigitalOut for the DIR pin (GPIO high = forward)
      */
-    OpenLoopStepper(TimPWM &pwmTimer, DigitalOut &dirPin);
+    OpenLoopStepper(TimPWM &pwmTimer, DigitalOut &dirPin,
+                    float stepsPerMotorRev = 200.0f, float reduction = 1.0f);
 
     /** Set absolute target position in steps (relative to virtual 0 at startup) */
     void setTargetPosition(int32_t position);
@@ -92,7 +115,21 @@ public:
     /** Immediately stop generating pulses (keeps the current virtual position) */
     void stop();
 
+    // NEW: degrees-based API (absolute / relative at OUTPUT shaft)
+    void setTargetDegrees(float degrees);
+    void moveByDegrees(float deltaDegrees);
+
+    // NEW: configuration helpers
+    void setReduction(float r)           { reduction = (r > 0.f ? r : 1.f); }
+    void setStepsPerMotorRev(float spr)  { stepsPerMotorRev = (spr > 0.f ? spr : 200.f); }
+
 private:
+    inline float stepsPerOutputRev() const { return stepsPerMotorRev * reduction; }
+    inline int32_t degreesToSteps(float deg) const {
+        const float steps = (deg / 360.0f) * stepsPerOutputRev();
+        return static_cast<int32_t>( (steps >= 0.f) ? (steps + 0.5f) : (steps - 0.5f) );
+    }
+
     TimPWM     &pwm;
     DigitalOut &direction;
 
@@ -101,6 +138,10 @@ private:
     uint16_t  speed           = 0;   // steps/second
     bool      running         = false;
     bool      dirPositive     = true;
+    
+    // NEW: kinematics
+    float     stepsPerMotorRev;
+    float     reduction;
 };
 
 

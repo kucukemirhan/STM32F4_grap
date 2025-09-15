@@ -1,14 +1,16 @@
 #include "Stepper_lib.h"
 
-StepperMotor::StepperMotor(EncoderIT &enc, TimPWM &pwmTimer, DigitalOut &dir)
+StepperMotor::StepperMotor(EncoderIT &enc, TimPWM &pwmTimer, DigitalOut &dir,
+                           float stepsPerMotorRev_, float reduction_)
     : encoder(enc),
       pwm(pwmTimer),
       direction(dir),
       targetPosition(0),
       speed(0),
-      isPwmRunning(false)
+      isPwmRunning(false),
+      stepsPerMotorRev(stepsPerMotorRev_ > 0.f ? stepsPerMotorRev_ : 200.f),
+      reduction(reduction_ > 0.f ? reduction_ : 1.0f)
 {
-    // Assume the injected objects are pre-configured.
 }
 
 StepperMotor::~StepperMotor() {
@@ -68,9 +70,20 @@ void StepperMotor::stop() {
     }
 }
 
+void StepperMotor::setTargetDegrees(float degrees) {
+    setTargetPosition(degreesToSteps(degrees));
+}
 
-OpenLoopStepper::OpenLoopStepper(TimPWM &pwmTimer, DigitalOut &dirPin)
-: pwm(pwmTimer), direction(dirPin)
+void StepperMotor::moveByDegrees(float deltaDegrees) {
+    setTargetPosition(targetPosition + degreesToSteps(deltaDegrees));
+}
+
+// ===== OpenLoopStepper =====
+OpenLoopStepper::OpenLoopStepper(TimPWM &pwmTimer, DigitalOut &dirPin,
+                                 float stepsPerMotorRev_, float reduction_)
+: pwm(pwmTimer), direction(dirPin),
+  stepsPerMotorRev(stepsPerMotorRev_ > 0.f ? stepsPerMotorRev_ : 200.f),
+  reduction(reduction_ > 0.f ? reduction_ : 1.0f)
 {
     // default DIR: forward
     direction.write(GPIO_PIN_SET);
@@ -174,4 +187,14 @@ void OpenLoopStepper::stop()
         pwm.stop();
         running = false;
     }
+}
+
+void OpenLoopStepper::setTargetDegrees(float degrees)
+{
+    setTargetPosition(degreesToSteps(degrees));
+}
+
+void OpenLoopStepper::moveByDegrees(float deltaDegrees)
+{
+    moveBy(degreesToSteps(deltaDegrees));
 }
