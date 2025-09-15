@@ -60,10 +60,13 @@ public:
     inline void setPSC(uint16_t psc);
 
     void setFrequency(uint16_t frequency);
+    uint32_t consumePeriods();   // fetch & clear number of elapsed PWM periods
+    inline void onUpdateEvent() { _updateCount++; }  // called from ISR
 
     inline uint32_t getCNT(void);
     void reset(void) override;
     // void setPSC(uint16_t prescaler);
+    volatile uint32_t _updateCount = 0;
     
 protected:
     static class ISR<TimPWM> ISR_List;
@@ -71,6 +74,7 @@ protected:
 
 private:
     static void PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+
     
 };
 

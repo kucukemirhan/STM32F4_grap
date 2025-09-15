@@ -22,7 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MyStepperLib.h"
-#include "stm32_ros.h"
+// #include "stm32_ros.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,49 +81,36 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  DMA::init();
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_USART6_UART_Init();
   MX_TIM1_Init();
+  MX_TIM4_Init();
+  MX_TIM8_Init();
 
   /* USER CODE BEGIN 2 */
-  // TimPWM pwm1(TIM3, &htim3);
+  TimPWM pwm1(TIM3, &htim3);
+  TimPWM pwm2(TIM8, &htim8);
 
-  // EncoderIT enc1(&htim2);
+  EncoderIT enc1(&htim2, true);
+  EncoderIT enc2(&htim4, true);
+  enc1.start();
+  enc2.start();
 
-  // DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
+  DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
+  DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
 
-  // StepperMotor motor1(enc1, pwm1, dir1);
-  // motor1.setSpeed(1500);
-  // motor1.setTargetPosition(5000);
-
-  DigitalOut led1(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
-  DigitalOut led2(ORANGE_LED_GPIO_Port, ORANGE_LED_Pin);
-  DigitalOut led3(RED_LED_GPIO_Port, RED_LED_Pin);
-  DigitalOut led4(BLUE_LED_GPIO_Port, BLUE_LED_Pin);
-
-  TimIT tim1(TIM1, &htim1);
-  uint64_t tick1_ms_previous = 0;
-  uint64_t tick2_ms_previous = 0;
-  uint64_t tick3_ms_previous = 0;
-  uint64_t tick4_ms_previous = 0;
-  tim1.start();
-
-  uint16_t led1_delay = 0;
-  uint16_t led2_delay = 0;
-  uint16_t led3_delay = 0;
-  uint16_t led4_delay = 0;
+  StepperMotor motor1(enc1 ,pwm1, dir1);
+  motor1.setSpeed(1500);
+  motor1.setTargetPosition(3000);
   
-  // UART DMA read and write variables
-  UartParser uart1(USART6, &huart6);
-  uint8_t data[64] = {0};
-  uart1.start_read();
+  OpenLoopStepper motor2(pwm2, dir2);
+  motor2.setSpeed(1500);
+  motor2.setTargetPosition(3000);
 
   /* USER CODE END 2 */
   
@@ -135,47 +122,10 @@ int main(void)
     
     /* USER CODE BEGIN 3 */
 
-    uint16_t len = uart1.read(data, sizeof(data));
-    if (len > 0)
-    {
-      while(!uart1.is_tx_complete());
-      uart1.write(data, len);
-    }
-    // if (uart1.is_tx_complete()) // optional
-    // {
-    //   memset(data, 0, sizeof(data));
-    // }
-    led1_delay = static_cast<uint16_t>(uart1.getJointPosition(1));
-    led2_delay = static_cast<uint16_t>(uart1.getJointPosition(2));
-    led3_delay = static_cast<uint16_t>(uart1.getJointPosition(3));
-    led4_delay = static_cast<uint16_t>(uart1.getJointPosition(4));
-
-    if (tim1.delay_ms(tick1_ms_previous, led1_delay))
-    {
-      tick1_ms_previous = tim1.read();
-      led1.toggle();
-    }
-
-    if (tim1.delay_ms(tick2_ms_previous, led2_delay))
-    {
-      tick2_ms_previous = tim1.read();
-      led2.toggle();
-    }
-
-    if (tim1.delay_ms(tick3_ms_previous, led3_delay))
-    {
-      tick3_ms_previous = tim1.read();
-      led3.toggle();
-    }
-
-    if (tim1.delay_ms(tick4_ms_previous, led4_delay))
-    {
-      tick4_ms_previous = tim1.read();
-      led4.toggle();
-    }
-
-    // motor1.update();
-    // HAL_Delay(1);
+    motor1.update();
+    HAL_Delay(1);
+    motor2.update();
+    HAL_Delay(1);
   }
   /* USER CODE END 3 */
 }

@@ -31,6 +31,8 @@ public:
     // Stop the motor movement.
     void stop();
 
+    void setDeadband(int32_t steps) { deadbandSteps = (steps < 0 ? 0 : steps); }
+
 private:
     EncoderIT &encoder;      // Reference to an externally created encoder
     TimPWM &pwm;             // Reference to an externally created PWM timer
@@ -39,6 +41,67 @@ private:
     int32_t targetPosition;  // Desired position in steps
     uint16_t speed;          // Stepping speed (steps per second)
     bool isPwmRunning;       // Flag to track if PWM is already active
+
+    int32_t deadbandSteps = 200;   // default: ±2 steps deadband (tweak to taste)
 };
+
+#pragma once
+#include <stdint.h>
+#include "TIM_lib.h"
+#include "GPIO_lib.h"
+
+/**
+ * @brief Open-loop stepper motor controller (no encoder).
+ *
+ * Generates step pulses via TimPWM and keeps a software "virtual position".
+ * It counts emitted pulses using TimPWM::consumePeriods() to stop exactly
+ * at the commanded target.
+ */
+class OpenLoopStepper {
+public:
+    /**
+     * @param pwmTimer  TimPWM instance configured to output STEP pulses
+     * @param dirPin    DigitalOut for the DIR pin (GPIO high = forward)
+     */
+    OpenLoopStepper(TimPWM &pwmTimer, DigitalOut &dirPin);
+
+    /** Set absolute target position in steps (relative to virtual 0 at startup) */
+    void setTargetPosition(int32_t position);
+
+    /** Relative move helper (delta in steps) */
+    void moveBy(int32_t delta);
+
+    /** Set constant speed in steps/second (must be > 0 to move) */
+    void setSpeed(uint16_t stepsPerSecond);
+
+    /** Returns current virtual position in steps */
+    int32_t getCurrentPosition() const;
+
+    /** Returns current target position in steps */
+    int32_t getTargetPosition() const;
+
+    /** Returns true while the motor is still moving toward its target */
+    bool isBusy() const;
+
+    /**
+     * @brief Progress motion and handle completion.
+     * Call this frequently from your main loop (e.g., every 1–5 ms).
+     */
+    void update();
+
+    /** Immediately stop generating pulses (keeps the current virtual position) */
+    void stop();
+
+private:
+    TimPWM     &pwm;
+    DigitalOut &direction;
+
+    int32_t   virtualPosition = 0;   // software-tracked position (steps)
+    int32_t   targetPosition  = 0;   // desired position (steps)
+    uint16_t  speed           = 0;   // steps/second
+    bool      running         = false;
+    bool      dirPositive     = true;
+};
+
 
 #endif // /* INC_STEPPER_LIB_H_ */

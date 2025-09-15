@@ -22,6 +22,8 @@ void TimPWM::PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if (ISR_List.get(i)->_htim == htim)
         {
             ISR_List.get(i)->setPSC(1);
+            
+            ISR_List.get(i)->onUpdateEvent(); // count one PWM period (one step pulse)
         }
     }
 }
@@ -226,6 +228,13 @@ void TimPWM::reset(void)
 uint32_t TimPWM::getCNT(void) 
 {
     return _htim->Instance->CNT;
+}
+
+uint32_t TimPWM::consumePeriods()
+{
+    uint32_t n = _updateCount;
+    _updateCount = 0;
+    return n;
 }
 
 // void TimPWM::setPSC(uint16_t prescaler) 

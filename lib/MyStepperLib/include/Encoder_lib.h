@@ -19,16 +19,12 @@ public:
 protected:
     TIM_HandleTypeDef *_htim;
     uint32_t _Channel;
-
-private:
-    static bool is_init[ENCODER_COUNT];
-    void init(void);
 };
 
 //using interrupt to update the counter outside of its range
 class EncoderIT : public EncoderBase {
 public:
-    EncoderIT(TIM_HandleTypeDef *htim);
+    EncoderIT(TIM_HandleTypeDef *htim, bool invertDirection = false);
     ~EncoderIT(void);
 
     HAL_StatusTypeDef start(void) override; 
@@ -41,6 +37,7 @@ protected:
 private:
     int32_t _overflow = 0;
     uint16_t rawCount = 0;
+    bool _invertDirection = false;
     
     static void PeriodElapsedCallback(TIM_HandleTypeDef *htim);
     void handleOverflow(void);

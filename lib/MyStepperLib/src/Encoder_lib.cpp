@@ -46,8 +46,8 @@ uint32_t EncoderBase::read(void)
 }
 
 // Encoder interrupt implementation
-EncoderIT::EncoderIT(TIM_HandleTypeDef *htim):
-EncoderBase(htim, _Channel)
+EncoderIT::EncoderIT(TIM_HandleTypeDef *htim, bool invertDirection):
+EncoderBase(htim, _Channel), _invertDirection(invertDirection)
 {
 #if USE_HAL_TIM_REGISTER_CALLBACKS != 1
 #error "USE_HAL_TIM_REGISTER_CALLBACKS must be enabled in stm32f1xx_hal_conf.h"
@@ -75,7 +75,6 @@ HAL_StatusTypeDef EncoderIT::start(void)
     }
 }
 
-
 HAL_StatusTypeDef EncoderIT::stop(void) 
 {
     return HAL_TIM_Encoder_Stop_IT(_htim, _Channel);
@@ -89,10 +88,10 @@ int32_t EncoderIT::read(void)
     // Combine with the overflow (multiply with 2^16)
     int32_t fullCount = (_overflow << 16) + rawCount;
     if (_overflow < 0) {
-        fullCount = ((_overflow + 1) << 16) - rawCount;
+        fullCount = ((_overflow) << 16) | rawCount;
     } // Adjusts for negative overflows
     
-    return fullCount;
+    return _invertDirection ? -fullCount : fullCount;
 }
 
 void EncoderIT::handleOverflow(void)
