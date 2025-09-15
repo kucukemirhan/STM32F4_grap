@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SLAVE_ID 0x121
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,8 +45,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile float latest_deg1 = 1.0;
-volatile float latest_deg2 = 1.0;
+float deg1 = 1000.0f;
+float deg2 = 2000.0f;
+float deg3 = 3000.0f;
+float deg4 = 4000.0f;
+float deg5 = 5000.0f;
+float deg6 = 6000.0f;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,6 +66,9 @@ static inline void CAN_Send2F(uint16_t std_id, float a, float b) {
     memcpy(&data[4], &b, 4);
 
     tx.StdId = std_id;         // 0x121 / 0x122 / 0x123
+    tx.IDE   = CAN_ID_STD;        // 11-bit ID
+    tx.RTR   = CAN_RTR_DATA;      // data frame
+    tx.DLC   = 8;
 
     uint32_t mbx;
     HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan1, &tx, data, &mbx);
@@ -73,19 +80,6 @@ static inline void CAN_Send2F(uint16_t std_id, float a, float b) {
     }
 }
 
-static void CAN_SetFilter_Std(void)
-{
-    CAN_FilterTypeDef f = {0};
-    f.FilterBank           = 0;                  // must be a CAN1 bank (see step 2)
-    f.FilterMode           = CAN_FILTERMODE_IDMASK;
-    f.FilterScale          = CAN_FILTERSCALE_32BIT;
-    f.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-    f.FilterActivation     = CAN_FILTER_ENABLE;
-    f.FilterIdHigh = 0x0000; f.FilterIdLow = 0x0000;
-    f.FilterMaskIdHigh = 0x0000; f.FilterMaskIdLow = 0x0000; // << accept everything
-    if (HAL_CAN_ConfigFilter(&hcan1, &f) != HAL_OK) Error_Handler();
-}
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -93,7 +87,12 @@ static void CAN_SetFilter_Std(void)
 
 void TaskFunction(void)
 {
+    // static const uint16_t ids[3] = {0x121, 0x122, 0x123};
+    // static uint8_t idx = 0;
 
+    // CAN_Send2F(ids[idx], deg1, deg2);   // send to next slave
+    // idx++; 
+    // if (idx >= 3) idx = 0;              // wrap
 }
 
 CAN_HandleTypeDef    CanHandle;
@@ -105,17 +104,7 @@ uint32_t             TxMailbox;
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-    CAN_RxHeaderTypeDef rx;
-    uint8_t d[8];
-    if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx, d) != HAL_OK) return;
 
-    if (rx.IDE == CAN_ID_STD && rx.StdId == SLAVE_ID && rx.DLC == 8) {
-        float a, b;
-        memcpy(&a, &d[0], 4);
-        memcpy(&b, &d[4], 4);
-        latest_deg1 = a;
-        latest_deg2 = b;
-    }
 }
 
 
@@ -158,34 +147,48 @@ int main(void)
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
-    CAN_SetFilter_Std();
-    if (HAL_CAN_Start(&hcan1) != HAL_OK) Error_Handler();
-    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) Error_Handler();
-    
+  if (HAL_CAN_Start(&hcan1) != HAL_OK)
+{
+    Error_Handler();
+}
 
-  // TimIT taskTimer(TIM1, &htim1);
-  // taskTimer.setUserCallback(TaskFunction);
-  // taskTimer.start();
+if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+{
+    Error_Handler();
+}
 
-  // TimPWM pwm1(TIM3, &htim3);
-  // TimPWM pwm2(TIM8, &htim8);
+  TxHeader.StdId = 0x446; // Master STM ID
+  TxHeader.ExtId = 0x00;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.DLC = 8;
+  TxHeader.TransmitGlobalTime = DISABLE;
 
-  // EncoderIT enc1(&htim2, true);
-  // EncoderIT enc2(&htim4, true);
-  // enc1.start();
-  // enc2.start();
+  HAL_Delay(1000);
 
-  // DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
-  // DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
+  TimIT taskTimer(TIM1, &htim1);
+  taskTimer.setUserCallback(TaskFunction);
+  taskTimer.start();
 
-  // OpenLoopStepper   motor1(pwm1, dir1, 200.0f, 10.0f);
-  // OpenLoopStepper   motor2(pwm2, dir2, 10000.0f,  50.0f);
+  TimPWM pwm1(TIM3, &htim3);
+  TimPWM pwm2(TIM8, &htim8);
 
-  // motor1.setSpeed(1500);
-  // motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
+  EncoderIT enc1(&htim2, true);
+  EncoderIT enc2(&htim4, true);
+  enc1.start();
+  enc2.start();
+
+  DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
+  DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
+
+  OpenLoopStepper   motor1(pwm1, dir1, 200.0f, 10.0f);
+  OpenLoopStepper   motor2(pwm2, dir2, 10000.0f,  50.0f);
+
+  motor1.setSpeed(1500);
+  motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
  
-  // motor2.setSpeed(1500);
-  // motor2.setTargetDegrees(5.0f);   // quarter turn at OUTPUT shaft
+  motor2.setSpeed(1500);
+  motor2.setTargetDegrees(5.0f);   // quarter turn at OUTPUT shaft
 
   DigitalOut red_LED(RED_LED_GPIO_Port, RED_LED_Pin);
   DigitalOut blue_LED(BLUE_LED_GPIO_Port, BLUE_LED_Pin);
@@ -200,28 +203,9 @@ while (1)
     // HAL_Delay(1);
     // motor2.update();
     // HAL_Delay(1);
-
-    if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0) {
-    CAN_RxHeaderTypeDef rx;
-    uint8_t d[8];
-    if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx, d) == HAL_OK) {
-        if (rx.IDE == CAN_ID_STD && rx.StdId == SLAVE_ID && rx.DLC == 8) {
-            float a, b;
-            memcpy(&a, &d[0], 4);
-            memcpy(&b, &d[4], 4);
-            latest_deg1 = a;
-            latest_deg2 = b;
-        }
-      }
-    }
-
-    red_LED.toggle();
-    uint32_t dly = (uint32_t)latest_deg2;
-    if (dly > 10000U) dly = 10000U;
-    HAL_Delay(dly);
-
-    blue_LED.toggle();
-    HAL_Delay(1000U);
+    CAN_Send2F(0x121, deg1, deg2);  HAL_Delay(10);
+    CAN_Send2F(0x122, deg3, deg4);  HAL_Delay(10);
+    CAN_Send2F(0x123, deg5, deg6);  HAL_Delay(10);
 }
 
   /* USER CODE END 3 */
