@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SLAVE_ID 0x121
+#define SLAVE_ID 0x122
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,6 +45,20 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint32_t dly = 0;
+
+TimPWM pwm1(TIM3, &htim3);
+TimPWM pwm2(TIM8, &htim8);
+
+EncoderIT enc1(&htim2, true);
+EncoderIT enc2(&htim4, true);
+
+DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
+DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
+
+OpenLoopStepper   motor1(pwm1, dir1, 200.0f, 10.0f);
+OpenLoopStepper   motor2(pwm2, dir2, 10000.0f,  50.0f);
+
 volatile float latest_deg1 = 1.0;
 volatile float latest_deg2 = 1.0;
 /* USER CODE END PV */
@@ -86,16 +100,20 @@ static void CAN_SetFilter_Std(void)
     if (HAL_CAN_ConfigFilter(&hcan1, &f) != HAL_OK) Error_Handler();
 }
 
+void TaskFunction(void)
+{
+  dly = (uint32_t)latest_deg2;
+
+  motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
+  motor1.update();
+  
+  motor2.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
+  motor2.update();
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void TaskFunction(void)
-{
-
-}
-
 CAN_HandleTypeDef    CanHandle;
 CAN_TxHeaderTypeDef  TxHeader;
 CAN_RxHeaderTypeDef  RxHeader;
@@ -157,35 +175,23 @@ int main(void)
   MX_TIM8_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-
-    CAN_SetFilter_Std();
-    if (HAL_CAN_Start(&hcan1) != HAL_OK) Error_Handler();
-    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) Error_Handler();
+  CAN_SetFilter_Std();
+  if (HAL_CAN_Start(&hcan1) != HAL_OK) Error_Handler();
+  if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) Error_Handler();
     
 
-  // TimIT taskTimer(TIM1, &htim1);
-  // taskTimer.setUserCallback(TaskFunction);
-  // taskTimer.start();
+  TimIT taskTimer(TIM1, &htim1);
+  taskTimer.setUserCallback(TaskFunction);
+  taskTimer.start();
 
-  // TimPWM pwm1(TIM3, &htim3);
-  // TimPWM pwm2(TIM8, &htim8);
+  enc1.start();
+  enc2.start();
 
-  // EncoderIT enc1(&htim2, true);
-  // EncoderIT enc2(&htim4, true);
-  // enc1.start();
-  // enc2.start();
-
-  // DigitalOut dir1(DIR1_GPIO_Port, DIR1_Pin);
-  // DigitalOut dir2(DIR2_GPIO_Port, DIR2_Pin);
-
-  // OpenLoopStepper   motor1(pwm1, dir1, 200.0f, 10.0f);
-  // OpenLoopStepper   motor2(pwm2, dir2, 10000.0f,  50.0f);
-
-  // motor1.setSpeed(1500);
-  // motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
+  motor1.setSpeed(1500);
+  motor1.setTargetDegrees(5.0f);  // half turn at OUTPUT shaft
  
-  // motor2.setSpeed(1500);
-  // motor2.setTargetDegrees(5.0f);   // quarter turn at OUTPUT shaft
+  motor2.setSpeed(1500);
+  motor2.setTargetDegrees(5.0f);   // quarter turn at OUTPUT shaft
 
   DigitalOut red_LED(RED_LED_GPIO_Port, RED_LED_Pin);
   DigitalOut blue_LED(BLUE_LED_GPIO_Port, BLUE_LED_Pin);
@@ -196,32 +202,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 while (1)
 {
-    // motor1.update();
-    // HAL_Delay(1);
-    // motor2.update();
-    // HAL_Delay(1);
-
-    if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0) {
-    CAN_RxHeaderTypeDef rx;
-    uint8_t d[8];
-    if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx, d) == HAL_OK) {
-        if (rx.IDE == CAN_ID_STD && rx.StdId == SLAVE_ID && rx.DLC == 8) {
-            float a, b;
-            memcpy(&a, &d[0], 4);
-            memcpy(&b, &d[4], 4);
-            latest_deg1 = a;
-            latest_deg2 = b;
-        }
-      }
-    }
-
-    red_LED.toggle();
-    uint32_t dly = (uint32_t)latest_deg2;
-    if (dly > 10000U) dly = 10000U;
-    HAL_Delay(dly);
-
-    blue_LED.toggle();
-    HAL_Delay(1000U);
+    // if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0) {
+    // CAN_RxHeaderTypeDef rx;
+    // uint8_t d[8];
+    // if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx, d) == HAL_OK) {
+    //     if (rx.IDE == CAN_ID_STD && rx.StdId == SLAVE_ID && rx.DLC == 8) {
+    //         float a, b;
+    //         memcpy(&a, &d[0], 4);
+    //         memcpy(&b, &d[4], 4);
+    //         latest_deg1 = a;
+    //         latest_deg2 = b;
+    //     }
+    //   }
+    // }
 }
 
   /* USER CODE END 3 */
